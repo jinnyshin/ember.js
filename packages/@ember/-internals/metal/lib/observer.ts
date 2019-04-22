@@ -117,22 +117,51 @@ export function deactivateObserver(target: object, eventName: string) {
   }
 }
 
-export function checkActiveObservers() {
-  ACTIVE_OBSERVERS.forEach((activeObservers, target) => {
+function getInvalidActiveObservers() {
+  let invalidObservers: any[] = [];
+
+
+
+  return invalidObservers;
+}
+
+export function flushInvalidActiveObservers() {
+  for (let [target, activeObservers] of ACTIVE_OBSERVERS) {
     let meta = peekMeta(target);
 
     if (meta && meta.isMetaDestroyed()) {
       ACTIVE_OBSERVERS.delete(target);
-      return;
+      continue;
     }
 
-    activeObservers.forEach((observer, eventName) => {
+    for (let [eventName, observer] of activeObservers) {
       if (!observer.tag.validate(observer.lastRevision)) {
-        sendEvent(target, eventName, [target, observer.path]);
-
-        observer.tag = getChainTagsForKey(target, observer.path);
-        observer.lastRevision = observer.tag.value();
+        try {
+          sendEvent(target, eventName, [target, observer.path]);
+        } finally {
+          observer.tag = getChainTagsForKey(target, observer.path);
+          observer.lastRevision = observer.tag.value();
+        }
       }
-    });
+    }
   });
+}
+
+export function hasInvalidActiveObservers() {
+  for (let [target, activeObservers] of ACTIVE_OBSERVERS) {
+    let meta = peekMeta(target);
+
+    if (meta && meta.isMetaDestroyed()) {
+      ACTIVE_OBSERVERS.delete(target);
+      continue;
+    }
+
+    for (let [eventName, observer] of activeObservers) {
+      if (!observer.tag.validate(observer.lastRevision)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }

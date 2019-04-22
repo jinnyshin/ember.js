@@ -788,6 +788,7 @@ if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
            * }
            */
           try {
+            debugger;
             return routing.generateURL(route, models, query);
           } catch (e) {
             // tslint:disable-next-line:max-line-length

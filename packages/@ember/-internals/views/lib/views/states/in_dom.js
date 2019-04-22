@@ -1,5 +1,4 @@
 import { assign } from '@ember/polyfills';
-import { addObserver } from '@ember/-internals/metal';
 import EmberError from '@ember/error';
 import { DEBUG } from '@glimmer/env';
 import hasElement from './has_element';
@@ -11,8 +10,15 @@ const inDOM = assign({}, hasElement, {
     view.renderer.register(view);
 
     if (DEBUG) {
-      addObserver(view, 'elementId', () => {
-        throw new EmberError("Changing a view's elementId after creation is not allowed");
+      let elementId = view.elementId;
+
+      Object.defineProperty(view, 'elementId', {
+        get() {
+          return elementId;
+        },
+        set() {
+          throw new EmberError("Changing a view's elementId after creation is not allowed");
+        },
       });
     }
   },

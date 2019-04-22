@@ -1,6 +1,6 @@
 import { assert } from '@ember/debug';
 import { onErrorTarget } from '@ember/-internals/error-handling';
-import { checkActiveObservers } from '@ember/-internals/metal';
+import { flushInvalidActiveObservers, hasInvalidActiveObservers } from '@ember/-internals/metal';
 import Backburner from 'backburner';
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 
@@ -9,11 +9,15 @@ export function getCurrentRunLoop() {
   return currentRunLoop;
 }
 
+function K() {
+  /* noop */
+}
+
 function onBegin(current) {
   currentRunLoop = current;
 
   if (EMBER_METAL_TRACKED_PROPERTIES) {
-    checkActiveObservers();
+    flushInvalidActiveObservers();
   }
 }
 
@@ -21,7 +25,9 @@ function onEnd(current, next) {
   currentRunLoop = next;
 
   if (EMBER_METAL_TRACKED_PROPERTIES) {
-    checkActiveObservers();
+    if (hasInvalidActiveObservers()) {
+      backburner.join(null, K);
+    }
   }
 }
 

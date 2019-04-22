@@ -7,6 +7,7 @@ import {
   classes as classMatcher,
   moduleFor,
   runTask,
+  runLoopSettled,
 } from 'internal-test-helpers';
 
 if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
@@ -290,7 +291,7 @@ if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
           );
         });
       }
-      ['@test href updates when unsupplied controller QP props change'](assert) {
+      async ['@test href updates when unsupplied controller QP props change'](assert) {
         this.addTemplate(
           'index',
           `
@@ -300,20 +301,22 @@ if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
           `
         );
 
-        return this.visit('/').then(() => {
-          let indexController = this.getController('index');
-          let theLink = this.$('#the-link');
+        await this.visit('/');
 
-          assert.equal(theLink.attr('href'), '/?foo=lol');
+        let indexController = this.getController('index');
+        let theLink = this.$('#the-link');
 
-          runTask(() => indexController.set('bar', 'BORF'));
+        assert.equal(theLink.attr('href'), '/?foo=lol');
 
-          assert.equal(theLink.attr('href'), '/?bar=BORF&foo=lol');
+        indexController.set('bar', 'BORF');
+        await runLoopSettled();
 
-          runTask(() => indexController.set('foo', 'YEAH'));
+        assert.equal(theLink.attr('href'), '/?bar=BORF&foo=lol');
 
-          assert.equal(theLink.attr('href'), '/?bar=BORF&foo=lol');
-        });
+        indexController.set('foo', 'YEAH');
+        await runLoopSettled();
+
+        assert.equal(theLink.attr('href'), '/?bar=BORF&foo=lol');
       }
 
       ['@test The <LinkTo /> component with only query params always transitions to the current route with the query params applied'](

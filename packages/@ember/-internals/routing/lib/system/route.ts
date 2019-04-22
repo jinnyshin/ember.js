@@ -903,13 +903,11 @@ class Route extends EmberObject implements IRoute {
     // Assign the route's controller so that it can more easily be
     // referenced in action handlers. Side effects. Side effects everywhere.
     if (!this.controller) {
-      let qp = get(this, '_qp');
-      let propNames = qp !== undefined ? get(qp, 'propertyNames') : [];
-      addQueryParamsObservers(controller, propNames);
       this.controller = controller;
     }
 
     let queryParams = get(this, '_qp');
+    let allParams = queryParams.propertyNames;
 
     let states = queryParams.states;
 
@@ -921,7 +919,6 @@ class Route extends EmberObject implements IRoute {
 
       let cache = this._bucketCache;
       let params = transition[PARAMS_SYMBOL];
-      let allParams = queryParams.propertyNames;
 
       allParams.forEach((prop: string) => {
         let aQp = queryParams.map[prop];
@@ -933,8 +930,15 @@ class Route extends EmberObject implements IRoute {
       });
 
       let qpValues = getQueryParamsFor(this, transition[STATE_SYMBOL]!);
-      setProperties(controller, qpValues);
+
+      for (let qp in qpValues) {
+        set(controller, qp, qpValues[qp]);
+        controller._qpChanged(controller, qp);
+      }
     }
+
+    let propNames = allParams || [];
+    addQueryParamsObservers(controller, propNames);
 
     this.setupController(controller, context, transition);
 
@@ -952,6 +956,8 @@ class Route extends EmberObject implements IRoute {
     if (!qp) {
       return;
     }
+
+    debugger;
 
     // Update model-dep cache
     let cache = this._bucketCache;
