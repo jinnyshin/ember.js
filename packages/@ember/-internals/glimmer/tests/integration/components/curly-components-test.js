@@ -2526,15 +2526,11 @@ moduleFor(
       );
     }
 
-    ["@test when a property is changed during children's rendering"](assert) {
-      let outer, middle;
+    ["@test when a property is changed during children's rendering"]() {
+      let middle;
 
       this.registerComponent('x-outer', {
         ComponentClass: Component.extend({
-          init() {
-            this._super(...arguments);
-            outer = this;
-          },
           value: 1,
         }),
         template: '{{#x-middle}}{{x-inner value=value}}{{/x-middle}}',
@@ -2554,35 +2550,17 @@ moduleFor(
       this.registerComponent('x-inner', {
         ComponentClass: Component.extend({
           value: null,
-          pushDataUp: observer('value', function() {
+          didReceiveAttrs() {
             middle.set('value', this.get('value'));
-          }),
+          },
         }),
         template: '<div id="inner-value">{{value}}</div>',
       });
 
-      this.render('{{x-outer}}');
-
-      assert.equal(this.$('#inner-value').text(), '1', 'initial render of inner');
-      assert.equal(
-        this.$('#middle-value').text(),
-        '',
-        'initial render of middle (observers do not run during init)'
-      );
-
-      runTask(() => this.rerender());
-
-      assert.equal(this.$('#inner-value').text(), '1', 'initial render of inner');
-      assert.equal(
-        this.$('#middle-value').text(),
-        '',
-        'initial render of middle (observers do not run during init)'
-      );
-
       let expectedBacktrackingMessage = /modified "value" twice on <.+?> in a single render\. It was rendered in "component:x-middle" and modified in "component:x-inner"/;
 
       expectAssertion(() => {
-        runTask(() => outer.set('value', 2));
+        this.render('{{x-outer}}');
       }, expectedBacktrackingMessage);
     }
 
