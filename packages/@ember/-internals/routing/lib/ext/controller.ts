@@ -66,7 +66,7 @@ ControllerMixin.reopen({
     @private
   */
   _qpChanged(controller: any, _prop: string) {
-    let dotIndex = _prop.indexOf('.');
+    let dotIndex = _prop.indexOf('.[]');
     let prop = dotIndex === -1 ? _prop : _prop.slice(0, dotIndex);
 
     let delegate = controller._qpDelegate;

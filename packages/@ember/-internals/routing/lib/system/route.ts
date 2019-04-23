@@ -900,12 +900,6 @@ class Route extends EmberObject implements IRoute {
       controller = this.generateController(controllerName);
     }
 
-    // Assign the route's controller so that it can more easily be
-    // referenced in action handlers. Side effects. Side effects everywhere.
-    if (!this.controller) {
-      this.controller = controller;
-    }
-
     let queryParams = get(this, '_qp');
     let allParams = queryParams.propertyNames;
 
@@ -932,13 +926,22 @@ class Route extends EmberObject implements IRoute {
       let qpValues = getQueryParamsFor(this, transition[STATE_SYMBOL]!);
 
       for (let qp in qpValues) {
-        set(controller, qp, qpValues[qp]);
-        controller._qpChanged(controller, qp);
+        let value = qpValues[qp];
+
+        if (controller[qp] !== value) {
+          set(controller, qp, value);
+          controller._qpChanged(controller, qp);
+        }
       }
     }
 
-    let propNames = allParams || [];
-    addQueryParamsObservers(controller, propNames);
+    // Assign the route's controller so that it can more easily be
+    // referenced in action handlers. Side effects. Side effects everywhere.
+    if (!this.controller) {
+      let propNames = allParams || [];
+      addQueryParamsObservers(controller, propNames);
+      this.controller = controller;
+    }
 
     this.setupController(controller, context, transition);
 
