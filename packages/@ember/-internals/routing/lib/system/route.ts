@@ -5,7 +5,6 @@ import {
   getProperties,
   isEmpty,
   set,
-  setProperties,
 } from '@ember/-internals/metal';
 import { getOwner, Owner } from '@ember/-internals/owner';
 import {
