@@ -957,8 +957,6 @@ class Route extends EmberObject implements IRoute {
       return;
     }
 
-    debugger;
-
     // Update model-dep cache
     let cache = this._bucketCache;
     let cacheKey = calculateCacheKey(qp.route.fullRouteName, qp.parts, qp.values);
