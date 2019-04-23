@@ -43,7 +43,7 @@ export function getChainTagsForKey(obj: any, key: string) {
   while (segments.length > 0) {
     let segment = segments.shift()!;
 
-    if (segment === '@each') {
+    if (segment === '@each' && segments.length > 0) {
       segment = segments.shift()!;
 
       // Push the tags for each item's property
