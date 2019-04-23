@@ -9,6 +9,7 @@ import {
   equalsElement,
   styles,
   runTask,
+  runLoopSettled,
 } from 'internal-test-helpers';
 
 import { run } from '@ember/runloop';
@@ -3186,7 +3187,7 @@ moduleFor(
       this.assertText('things');
     }
 
-    ['@test didReceiveAttrs fires after .init() but before observers become active'](assert) {
+    async ['@test didReceiveAttrs fires after .init() but before observers become active'](assert) {
       let barCopyDidChangeCount = 0;
 
       this.registerComponent('foo-bar', {
@@ -3209,13 +3210,15 @@ moduleFor(
         template: '{{bar}}-{{barCopy}}',
       });
 
-      this.render(`{{foo-bar bar=bar}}`, { bar: 3 });
+      await this.render(`{{foo-bar bar=bar}}`, { bar: 3 });
 
       this.assertText('3-4');
 
       assert.strictEqual(barCopyDidChangeCount, 1, 'expected observer firing for: barCopy');
 
-      runTask(() => set(this.context, 'bar', 7));
+      set(this.context, 'bar', 7);
+
+      await runLoopSettled();
 
       this.assertText('7-8');
 
