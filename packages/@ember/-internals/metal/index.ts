@@ -56,7 +56,6 @@ export {
   activateObserver,
   removeObserver,
   flushInvalidActiveObservers,
-  hasInvalidActiveObservers,
 } from './lib/observer';
 export { Mixin, aliasMethod, mixin, observer, applyMixin } from './lib/mixin';
 export { default as inject, DEBUG_INJECTION_FUNCTIONS } from './lib/injected_property';

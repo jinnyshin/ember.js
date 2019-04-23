@@ -1,6 +1,7 @@
 import { peekMeta } from '@ember/-internals/meta';
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
-import { Tag } from '@glimmer/reference';
+import { schedule } from '@ember/runloop';
+import { CURRENT_TAG, Tag } from '@glimmer/reference';
 import { getChainTagsForKey } from './chain-tags';
 import changeEvent from './change_event';
 import { addListener, removeListener, sendEvent } from './events';
@@ -117,51 +118,34 @@ export function deactivateObserver(target: object, eventName: string) {
   }
 }
 
-function getInvalidActiveObservers() {
-  let invalidObservers: any[] = [];
-
-
-
-  return invalidObservers;
-}
+let lastKnownRevision = 0;
 
 export function flushInvalidActiveObservers() {
-  for (let [target, activeObservers] of ACTIVE_OBSERVERS) {
-    let meta = peekMeta(target);
-
-    if (meta && meta.isMetaDestroyed()) {
-      ACTIVE_OBSERVERS.delete(target);
-      continue;
-    }
-
-    for (let [eventName, observer] of activeObservers) {
-      if (!observer.tag.validate(observer.lastRevision)) {
-        try {
-          sendEvent(target, eventName, [target, observer.path]);
-        } finally {
-          observer.tag = getChainTagsForKey(target, observer.path);
-          observer.lastRevision = observer.tag.value();
-        }
-      }
-    }
-  });
-}
-
-export function hasInvalidActiveObservers() {
-  for (let [target, activeObservers] of ACTIVE_OBSERVERS) {
-    let meta = peekMeta(target);
-
-    if (meta && meta.isMetaDestroyed()) {
-      ACTIVE_OBSERVERS.delete(target);
-      continue;
-    }
-
-    for (let [eventName, observer] of activeObservers) {
-      if (!observer.tag.validate(observer.lastRevision)) {
-        return true;
-      }
-    }
+  if (lastKnownRevision === CURRENT_TAG.value()) {
+    return;
   }
 
-  return false;
+  lastKnownRevision = CURRENT_TAG.value();
+
+  ACTIVE_OBSERVERS.forEach((activeObservers, target) => {
+    let meta = peekMeta(target);
+
+    if (meta && meta.isMetaDestroyed()) {
+      ACTIVE_OBSERVERS.delete(target);
+      return;
+    }
+
+    activeObservers.forEach((observer, eventName) => {
+      if (!observer.tag.validate(observer.lastRevision)) {
+        schedule('actions', () => {
+          try {
+            sendEvent(target, eventName, [target, observer.path]);
+          } finally {
+            observer.tag = getChainTagsForKey(target, observer.path);
+            observer.lastRevision = observer.tag.value();
+          }
+        });
+      }
+    });
+  });
 }
