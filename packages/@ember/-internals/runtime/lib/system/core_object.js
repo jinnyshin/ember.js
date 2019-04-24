@@ -134,11 +134,11 @@ function initialize(obj, properties) {
   m.unsetInitializing();
 
   if (EMBER_METAL_TRACKED_PROPERTIES) {
-    let inheritedObserverEvents = m.parent.observerEvents();
+    let observerEvents = m.observerEvents();
 
-    if (inheritedObserverEvents !== undefined) {
-      for (let i = 0; i < inheritedObserverEvents.length; i++) {
-        activateObserver(obj, inheritedObserverEvents[i]);
+    if (observerEvents !== undefined) {
+      for (let i = 0; i < observerEvents.length; i++) {
+        activateObserver(obj, observerEvents[i]);
       }
     }
   } else {

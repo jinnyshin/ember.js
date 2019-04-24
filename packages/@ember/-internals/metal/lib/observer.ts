@@ -41,7 +41,9 @@ export function addObserver(
   addListener(obj, eventName, target, method);
 
   if (EMBER_METAL_TRACKED_PROPERTIES) {
-    if (!(obj.constructor && obj.constructor.prototype === obj)) {
+    let meta = peekMeta(obj);
+
+    if (meta === null || !(meta.isPrototypeMeta(obj) || meta.isInitializing())) {
       activateObserver(obj, eventName);
     }
   } else {
@@ -116,6 +118,24 @@ export function deactivateObserver(target: object, eventName: string) {
       activeObservers.delete(eventName);
     }
   }
+}
+
+/**
+ * Primarily used for cases where we are redefining a class, e.g. mixins/reopen
+ * being applied later. Revalidates all the observers, resetting their tags.
+ *
+ * @private
+ * @param target
+ */
+export function revalidateObservers(target: object) {
+  if (!ACTIVE_OBSERVERS.has(target)) {
+    return;
+  }
+
+  ACTIVE_OBSERVERS.get(target)!.forEach(observer => {
+    observer.tag = getChainTagsForKey(target, observer.path);
+    observer.lastRevision = observer.tag.value();
+  });
 }
 
 let lastKnownRevision = 0;
