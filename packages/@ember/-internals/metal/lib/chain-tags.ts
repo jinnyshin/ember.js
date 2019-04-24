@@ -1,4 +1,5 @@
 import { meta as metaFor, peekMeta } from '@ember/-internals/meta';
+import { assert } from '@ember/debug';
 import { combine, CONSTANT_TAG, Tag, UpdatableTag } from '@glimmer/reference';
 import { getLastRevisionFor, peekCacheFor } from './computed_cache';
 import { descriptorForProperty } from './descriptor_map';
@@ -47,7 +48,14 @@ export function getChainTagsForKey(obj: any, key: string) {
       segment = segments.shift()!;
 
       // Push the tags for each item's property
-      let tags = (current as Array<any>).map(item => tagForProperty(item, segment));
+      let tags = (current as Array<any>).map(item => {
+        assert(
+          `When using @each to observe the array \`${current.toString()}\`, the items in the array must be objects`,
+          typeof item === 'object'
+        );
+
+        return tagForProperty(item, segment);
+      });
 
       // Push the tag for the array length itself
       chainTags.push(...tags, tagForProperty(current, '[]'));
