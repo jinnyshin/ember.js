@@ -140,7 +140,7 @@ export function revalidateObservers(target: object) {
 
 let lastKnownRevision = 0;
 
-export function flushInvalidActiveObservers() {
+export function flushInvalidActiveObservers(shouldSchedule = true) {
   if (lastKnownRevision === CURRENT_TAG.value()) {
     return;
   }
@@ -157,14 +157,22 @@ export function flushInvalidActiveObservers() {
 
     activeObservers.forEach((observer, eventName) => {
       if (!observer.tag.validate(observer.lastRevision)) {
-        schedule('actions', () => {
+        let sendObserver = () => {
           try {
             sendEvent(target, eventName, [target, observer.path]);
           } finally {
             observer.tag = getChainTagsForKey(target, observer.path);
             observer.lastRevision = observer.tag.value();
           }
-        });
+        };
+
+        if (shouldSchedule) {
+          schedule('actions', sendObserver);
+        } else {
+          // TODO: we need to schedule eagerly in exactly one location (_internalReset),
+          // for query params. We should get rid of this ASAP
+          sendObserver();
+        }
       }
     });
   });
