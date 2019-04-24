@@ -6,6 +6,7 @@ import {
   isWatching,
   addObserver,
   removeObserver,
+  tagFor,
   tagForProperty,
 } from '..';
 import { Object as EmberObject } from '@ember/-internals/runtime';
@@ -128,7 +129,7 @@ moduleFor(
       defineProperty(obj, 'bar', alias('foo.faz'));
       get(obj, 'bar');
 
-      let tag = tagForProperty(obj, 'bar');
+      let tag = EMBER_METAL_TRACKED_PROPERTIES ? tagForProperty(obj, 'bar') : tagFor(obj);
       let tagValue = tag.value();
       set(obj, 'foo.faz', 'BAR');
 
