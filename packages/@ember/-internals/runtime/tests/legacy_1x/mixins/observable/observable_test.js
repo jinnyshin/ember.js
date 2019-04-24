@@ -1,11 +1,12 @@
 import { context } from '@ember/-internals/environment';
 import { run } from '@ember/runloop';
 import { get, computed, observer } from '@ember/-internals/metal';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { w } from '@ember/string';
 import EmberObject from '../../../../lib/system/object';
 import Observable from '../../../../lib/mixins/observable';
 import { A as emberA } from '../../../../lib/mixins/array';
-import { moduleFor, AbstractTestCase } from 'internal-test-helpers';
+import { moduleFor, AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 
 /*
   NOTE: This test is adapted from the 1.x series of unit tests.  The tests
@@ -783,20 +784,26 @@ moduleFor(
       });
     }
 
-    ['@test should register an observer for a property'](assert) {
+    async ['@test should register an observer for a property'](assert) {
       ObjectC.addObserver('normal', ObjectC, 'action');
       ObjectC.set('normal', 'newValue');
+
+      await runLoopSettled();
       assert.equal(ObjectC.normal1, 'newZeroValue');
     }
 
-    ['@test should register an observer for a property - Special case of chained property'](
+    async ['@test should register an observer for a property - Special case of chained property'](
       assert
     ) {
       ObjectC.addObserver('objectE.propertyVal', ObjectC, 'chainedObserver');
       ObjectC.objectE.set('propertyVal', 'chainedPropertyValue');
+      await runLoopSettled();
+
       assert.equal('chainedPropertyObserved', ObjectC.normal2);
       ObjectC.normal2 = 'dependentValue';
       ObjectC.set('objectE', '');
+      await runLoopSettled();
+
       assert.equal('chainedPropertyObserved', ObjectC.normal2);
     }
   }
@@ -843,32 +850,46 @@ moduleFor(
       });
     }
 
-    ['@test should unregister an observer for a property'](assert) {
+    async ['@test should unregister an observer for a property'](assert) {
       ObjectD.addObserver('normal', ObjectD, 'addAction');
       ObjectD.set('normal', 'newValue');
+      await runLoopSettled();
+
       assert.equal(ObjectD.normal1, 'newZeroValue');
 
       ObjectD.set('normal1', 'zeroValue');
+      await runLoopSettled();
 
       ObjectD.removeObserver('normal', ObjectD, 'addAction');
       ObjectD.set('normal', 'newValue');
       assert.equal(ObjectD.normal1, 'zeroValue');
     }
 
-    ["@test should unregister an observer for a property - special case when key has a '.' in it."](
+    async ["@test should unregister an observer for a property - special case when key has a '.' in it."](
       assert
     ) {
       ObjectD.addObserver('objectF.propertyVal', ObjectD, 'removeChainedObserver');
       ObjectD.objectF.set('propertyVal', 'chainedPropertyValue');
+      await runLoopSettled();
+
       ObjectD.removeObserver('objectF.propertyVal', ObjectD, 'removeChainedObserver');
       ObjectD.normal2 = 'dependentValue';
+
       ObjectD.objectF.set('propertyVal', 'removedPropertyValue');
+      await runLoopSettled();
+
       assert.equal('dependentValue', ObjectD.normal2);
+
       ObjectD.set('objectF', '');
+      await runLoopSettled();
+
       assert.equal('dependentValue', ObjectD.normal2);
     }
 
     ['@test removing an observer inside of an observer shouldn’t cause any problems'](assert) {
+      if (!EMBER_METAL_TRACKED_PROPERTIES) {
+        return assert.expect(0);
+      }
       // The observable system should be protected against clients removing
       // observers in the middle of observer notification.
       var encounteredError = false;
