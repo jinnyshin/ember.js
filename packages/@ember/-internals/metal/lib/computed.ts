@@ -610,7 +610,14 @@ export class ComputedProperty extends ComputedDescriptor {
     if (EMBER_METAL_TRACKED_PROPERTIES) {
       let ret = this._set(obj, keyName, value);
 
+      finishLazyChains(obj, keyName, ret);
+
       let propertyTag = tagForProperty(obj, keyName);
+
+      if (this._dependentKeys !== undefined) {
+        update(propertyTag, getChainTagsForKeys(obj, this._dependentKeys));
+      }
+
       setLastRevisionFor(obj, keyName, propertyTag.value());
 
       return ret;
