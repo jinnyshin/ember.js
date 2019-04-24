@@ -27,7 +27,7 @@ const ObservableObject = EmberObject.extend(Observable);
 
 let ObjectA;
 
-if (EMBER_METAL_TRACKED_PROPERTIES) {
+if (!EMBER_METAL_TRACKED_PROPERTIES) {
   moduleFor(
     'object.propertyChanges',
     class extends AbstractTestCase {
